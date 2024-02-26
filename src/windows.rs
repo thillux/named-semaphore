@@ -48,7 +48,10 @@ impl RawNamedSemaphore {
     }
 
     pub(crate) fn timedwait(&mut self, dur: Duration) -> Result<()> {
-        let wait_event = unsafe { WaitForSingleObject(self.handle, u32::try_from(dur.as_millis()).unwrap()) };
+        let Ok(wait_duration) = u32::try_from(dur.as_millis()) else {
+            return Err(Error::Unexpected);
+        };
+        let wait_event = unsafe { WaitForSingleObject(self.handle, wait_duration) };
         if wait_event == WAIT_FAILED {
             if let Err(last_error) = unsafe { GetLastError() } {
                 return Err(Error::WaitFailed(last_error));
